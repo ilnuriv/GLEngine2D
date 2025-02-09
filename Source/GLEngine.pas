@@ -101,7 +101,7 @@ Type
    w,h:word;
 
 
-//   gmf: array [0..255] of GLYPHMETRICSFLOAT; // ìàññèâ òğåáóåòñÿ äëÿ âåêòîğíîãî
+//   gmf: array [0..255] of GLYPHMETRICSFLOAT; // Ã¬Ã Ã±Ã±Ã¨Ã¢ Ã²Ã°Ã¥Ã¡Ã³Ã¥Ã²Ã±Ã¿ Ã¤Ã«Ã¿ Ã¢Ã¥ÃªÃ²Ã®Ã°Ã­Ã®Ã£Ã®
 
    toFrameBufer:boolean;
    DrawFrameCount:Integer;
@@ -162,14 +162,14 @@ Type
 
 ///   <summary>
 ///   <para>Draw Ellipse</para>
-///   <para>Ğèñóåò ıëëèïñ ñ öåíòğîì â òî÷êå (x,y) è ğàäèóñàìè r1 è r2,
-///    êîëè÷åñòâîì ñåãìåíòîâ - Quality. Fill - îïğåäåëÿåò íóæíî ëè çàëèâàòü öâåòîì</para>
+///   <para>ÃÃ¨Ã±Ã³Ã¥Ã² Ã½Ã«Ã«Ã¨Ã¯Ã± Ã± Ã¶Ã¥Ã­Ã²Ã°Ã®Ã¬ Ã¢ Ã²Ã®Ã·ÃªÃ¥ (x,y) Ã¨ Ã°Ã Ã¤Ã¨Ã³Ã±Ã Ã¬Ã¨ r1 Ã¨ r2,
+///    ÃªÃ®Ã«Ã¨Ã·Ã¥Ã±Ã²Ã¢Ã®Ã¬ Ã±Ã¥Ã£Ã¬Ã¥Ã­Ã²Ã®Ã¢ - Quality. Fill - Ã®Ã¯Ã°Ã¥Ã¤Ã¥Ã«Ã¿Ã¥Ã² Ã­Ã³Ã¦Ã­Ã® Ã«Ã¨ Ã§Ã Ã«Ã¨Ã¢Ã Ã²Ã¼ Ã¶Ã¢Ã¥Ã²Ã®Ã¬</para>
 ///   </summary>
      Procedure Ellipse2(x,y,r1,r2,AngleRotate:single;Quality:integer;Fill:boolean);
 
      Procedure Polygon(x,y,AngleRotate,TextureAngleRotate:single; n: array of TGLPoint);
      procedure PolygonTexture(x,y,AngleRotate,TexAngle:single;Trans, Scale: TGLPoint; vertex,tex: array of TGLPoint; image:Cardinal);
-     procedure PolygonTess( x, y, AngleRotate: single; n: array of TGLPoint ); // Ñïàñèáî cain
+     procedure PolygonTess( x, y, AngleRotate: single; n: array of TGLPoint ); // Ã‘Ã¯Ã Ã±Ã¨Ã¡Ã® cain
      Procedure Tesselate (var inVertexArray,outVertexArray: array of TGLPoint);
 
      procedure PolygonFromArray( x, y, AngleRotate: single; n: array of TGLPoint );
@@ -191,7 +191,7 @@ Type
 
 ///   <summary>
 ///   <para>Load TBitMat image to texture.</para>
-///   <para>Çàãğóæàåò TBitMat èçîáğàæåíèå â òåêñòóğó.</para>
+///   <para>Ã‡Ã Ã£Ã°Ã³Ã¦Ã Ã¥Ã² TBitMat Ã¨Ã§Ã®Ã¡Ã°Ã Ã¦Ã¥Ã­Ã¨Ã¥ Ã¢ Ã²Ã¥ÃªÃ±Ã²Ã³Ã°Ã³.</para>
 ///   </summary>
   {+}procedure AddBMPImage(Bmp:TBitMap;var Texture : Cardinal);
 
@@ -602,7 +602,20 @@ var
 
   ResStream : TResourceStream;      // used for loading from resource
 
+{$IFDEF CPUX64}
   // Copy a pixel from source to dest and Swap the RGB color values
+    procedure CopySwapPixel(const pSrc, pDst: Pointer);
+    var
+        r, g, b, a: Byte;
+    begin
+        b := (Cardinal(pSrc^) shr 24) and $FF;
+        g := (Cardinal(pSrc^) shr 16) and $FF;
+        r := (Cardinal(pSrc^) shr 8)  and $FF;
+        a :=  Cardinal(pSrc^)         and $FF;
+
+        PCardinal(pDst)^ := ((r shl 24) + (g shl 16) + (b shl 8) + a);
+    end;
+{$ELSE}
   procedure CopySwapPixel(const Source, Destination : Pointer);
   asm
     push ebx
@@ -616,6 +629,7 @@ var
     mov [edx+3],bh
     pop ebx
   end;
+{$ENDIF}
 
 begin
   result :=FALSE;
@@ -1307,23 +1321,23 @@ end;
 procedure TGLEngine.SetTextStyle(NameFont: string; size: integer);
 begin
   KillFont;
-  FontHandle := glGenLists(257);                                 // 96 znakù
-  font := CreateFont(-size,                                 // Vıška
-                      0,                                  // Šíøka
-                      0,                                  // Úhel escapement
-                      0,                                  // Úhel orientace
-                      FW_DONTCARE,                            // Tuènost
-                      0,                                  // Kurzíva
-                      0,                                  // Podtrení
-                      0,                                  // Pøeškrtnutí
-                      RUSSIAN_CHARSET,                       // Znaková sada
-                      OUT_TT_PRECIS,                      // Pøesnost vıstupu (TrueType)
-                      CLIP_DEFAULT_PRECIS,                // Pøesnost oøezání
-                      ANTIALIASED_QUALITY,                // Vıstupní kvalita
+  FontHandle := glGenLists(257);                                 // 96 znakÃ¹
+  font := CreateFont(-size,                                 // VÃ½Âška
+                      0,                                  // ÂŠÃ­Ã¸ka
+                      0,                                  // Ãšhel escapement
+                      0,                                  // Ãšhel orientace
+                      FW_DONTCARE,                            // TuÃ¨nost
+                      0,                                  // KurzÃ­va
+                      0,                                  // PodtrÂenÃ­
+                      0,                                  // PÃ¸eÂškrtnutÃ­
+                      RUSSIAN_CHARSET,                       // ZnakovÃ¡ sada
+                      OUT_TT_PRECIS,                      // PÃ¸esnost vÃ½stupu (TrueType)
+                      CLIP_DEFAULT_PRECIS,                // PÃ¸esnost oÃ¸ezÃ¡nÃ­
+                      ANTIALIASED_QUALITY,                // VÃ½stupnÃ­ kvalita
                       FF_DONTCARE or DEFAULT_PITCH,       // Rodina a pitch
-                      PChar(NameFont));                     // Jméno fontu
-  SelectObject(dcvis,font);                                // Vıbìr fontu do DC
-  wglUseFontBitmaps(dcvis,0,256,FontHandle);                     // Vytvoøí 96 znakù, poèínaje 32 v Ascii
+                      PChar(NameFont));                     // JmÃ©no fontu
+  SelectObject(dcvis,font);                                // VÃ½bÃ¬r fontu do DC
+  wglUseFontBitmaps(dcvis,0,256,FontHandle);                     // VytvoÃ¸Ã­ 96 znakÃ¹, poÃ¨Ã­naje 32 v Ascii
 //  wglUseFontOutlines (FontHandle, 0, 255, FontHandle, 50, 0.15,
   //                    WGL_FONT_POLYGONS, nil);
 // if not wglUseFontOutlines(dcvis, 0, 255, FontHandle, 50, 0.15, WGL_FONT_POLYGONS, @gmf) then
@@ -1335,7 +1349,7 @@ end;
 
 procedure TGLEngine.KillFont;
 begin
-  glDeleteLists(FontHandle,257);                                 // Smae všech 96 znakù (display listù)
+  glDeleteLists(FontHandle,257);                                 // SmaÂe vÂšech 96 znakÃ¹ (display listÃ¹)
   DeleteObject(font);
 end;
 
@@ -1678,13 +1692,13 @@ end;
 
 procedure TGLEngine.Resize(w, h: integer);
 begin
-{ if (Height=0) then		                                  // Zabezpeøenı proti dülenı nulou
-     Height:=1;                                           // Nastavı v¤Úku na jedna
-  glViewport(0, 0, Width, Height);                        // Resetuje aktuñlnı nastavenı
-  glMatrixMode(GL_PROJECTION);                            // Zvolı projekønı matici
+{ if (Height=0) then		                                  // ZabezpeÃ¸enÃ½ proti dÃ¼lenÃ½ nulou
+     Height:=1;                                           // NastavÃ½ vÂ¤Ãšku na jedna
+  glViewport(0, 0, Width, Height);                        // Resetuje aktuÃ±lnÃ½ nastavenÃ½
+  glMatrixMode(GL_PROJECTION);                            // ZvolÃ½ projekÃ¸nÃ½ matici
   glLoadIdentity();                                       // Reset matice
-  gluPerspective(45.0,Width/Height,0.1,100.0);            // V¤poøet perspektivy
-  glMatrixMode(GL_MODELVIEW);                             // Zvolı matici Modelview
+  gluPerspective(45.0,Width/Height,0.1,100.0);            // VÂ¤poÃ¸et perspektivy
+  glMatrixMode(GL_MODELVIEW);                             // ZvolÃ½ matici Modelview
   glLoadIdentity;   }
 
   self.w:=w;
@@ -2401,7 +2415,7 @@ end;
 
 procedure TGLEngine.ScreenShot(var BMP: TBitMap; AWidth, AHeight: integer);
 begin
- // ñîõğàíèò â BMP !ÑËÅÄÓŞÙÈÉ! êàäğ!
+ // Ã±Ã®ÃµÃ°Ã Ã­Ã¨Ã² Ã¢ BMP !Ã‘Ã‹Ã…Ã„Ã“ÃÃ™ÃˆÃ‰! ÃªÃ Ã¤Ã°!
  needScreenShot:=true;
  scs_BMP:=BMP;
  scs_AWidth:= AWidth;
